@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda Progressiva NuCel 2026 — T&D</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --nu-dark:    #3D0066;
+    --nu-purple:  #820AD1;
+    --nu-mid:     #A855D8;
+    --nu-light:   #E8D5F5;
+    --nu-lilac:   #F3E8FD;
+    --nu-pale:    #FAF5FF;
+    --white:      #FFFFFF;
+    --gray-100:   #F7F3FB;
+    --gray-200:   #EDE8F3;
+    --gray-400:   #B8A8CC;
+    --gray-700:   #5A4870;
+    --gray-900:   #1A0A2E;
+    --green:      #27AE60;
+    --green-bg:   #E8F8F0;
+    --amber:      #D68910;
+    --amber-bg:   #FEF9EC;
+    --blue:       #1565C0;
+    --blue-bg:    #E8F0FE;
+    --font: 'Sora', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--nu-pale);
+    color: var(--gray-900);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--nu-dark);
+    padding: 28px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .nu-logo {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: var(--nu-purple);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff;
+  }
+  .header-title { color: #fff; font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
+  .header-sub { color: var(--nu-light); font-size: 13px; font-weight: 300; margin-top: 2px; }
+  .header-date { color: var(--nu-light); font-size: 12px; font-weight: 400; }
+
+  /* ── Layout ── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 36px 40px 60px; }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--nu-purple);
+    margin: 32px 0 12px;
+  }
+
+  /* ── Metric cards ── */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .metric-card {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 22px 20px;
+    border: 1px solid var(--nu-light);
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--nu-purple);
+  }
+  .metric-card.accent::before { background: var(--green); }
+  .metric-card.warn::before { background: var(--amber); }
+  .metric-card.info::before { background: var(--blue); }
+  .metric-lbl { font-size: 11px; color: var(--gray-700); font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .metric-val { font-size: 36px; font-weight: 700; color: var(--nu-dark); line-height: 1; }
+  .metric-val.purple { color: var(--nu-purple); }
+  .metric-val.green  { color: var(--green); }
+  .metric-val.amber  { color: var(--amber); }
+  .metric-val.blue   { color: var(--blue); }
+  .metric-foot { font-size: 12px; color: var(--gray-400); margin-top: 6px; }
+
+  /* ── Month progress ── */
+  .months { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .month-card {
+    background: var(--white);
+    border: 1px solid var(--nu-light);
+    border-radius: 16px;
+    padding: 18px 16px;
+  }
+  .month-card.done { border-top: 3px solid var(--nu-purple); }
+  .month-card.active { border-top: 3px solid var(--amber); }
+  .month-card.upcoming { border-top: 3px solid var(--gray-200); }
+  .month-name { font-size: 13px; font-weight: 600; color: var(--nu-dark); margin-bottom: 10px; }
+  .month-num { font-size: 30px; font-weight: 700; color: var(--nu-purple); line-height: 1; }
+  .month-card.active .month-num { color: var(--amber); }
+  .month-card.upcoming .month-num { color: var(--gray-400); }
+  .month-desc { font-size: 11px; color: var(--gray-400); margin-top: 3px; margin-bottom: 10px; }
+  .prog-bar-bg { height: 5px; background: var(--gray-200); border-radius: 3px; }
+  .prog-bar { height: 5px; border-radius: 3px; background: var(--nu-purple); transition: width 1s; }
+  .month-card.active .prog-bar { background: var(--amber); }
+  .month-status {
+    margin-top: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .month-status.done   { color: var(--nu-purple); }
+  .month-status.active { color: var(--amber); }
+  .month-status.upcoming { color: var(--gray-400); }
+
+  /* ── Row two ── */
+  .row-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .panel {
+    background: var(--white);
+    border: 1px solid var(--nu-light);
+    border-radius: 16px;
+    padding: 22px;
+  }
+  .panel-title {
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--gray-700); margin-bottom: 16px;
+  }
+
+  /* Formato bars */
+  .fmt-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
+  .fmt-row:last-child { border-bottom: none; }
+  .fmt-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .fmt-name { font-size: 13px; color: var(--gray-900); flex: 1; }
+  .fmt-bg { flex: 2; height: 7px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
+  .fmt-fill { height: 7px; border-radius: 4px; }
+  .fmt-count { font-size: 13px; font-weight: 600; color: var(--nu-dark); min-width: 24px; text-align: right; }
+
+  /* Chart */
+  .chart-wrap { position: relative; width: 100%; height: 200px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 11px; color: var(--gray-700); }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  /* ── Timeline ── */
+  .timeline { }
+  .tl-row { display: grid; grid-template-columns: 68px 1fr; gap: 0; }
+  .tl-month {
+    font-size: 11px; font-weight: 600; color: var(--gray-700);
+    padding: 10px 14px 10px 0; text-align: right;
+    border-right: 2px solid var(--gray-200);
+    display: flex; align-items: flex-start; justify-content: flex-end; padding-top: 13px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .tl-month.current { border-right: 2px solid var(--nu-purple); color: var(--nu-purple); }
+  .tl-chips { padding: 8px 0 8px 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .chip {
+    font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px;
+    white-space: nowrap;
+  }
+  .chip-video   { background: var(--blue-bg);   color: var(--blue); }
+  .chip-ppt     { background: var(--nu-lilac);   color: var(--nu-dark); }
+  .chip-card    { background: var(--amber-bg);   color: var(--amber); }
+  .chip-pilula  { background: #FCE4EC;            color: #880E4F; }
+  .chip.faded   { opacity: 0.45; }
+  .chip-active  { background: var(--nu-purple); color: #fff; }
+
+  /* ── Status table ── */
+  .status-table { width: 100%; border-collapse: collapse; }
+  .status-table th {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gray-400); font-weight: 600; padding: 8px 12px;
+    border-bottom: 1px solid var(--gray-200); text-align: left;
+  }
+  .status-table td { padding: 11px 12px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .status-table tr:last-child td { border-bottom: none; }
+  .status-table .week-col { color: var(--gray-400); font-size: 11px; font-weight: 600; }
+  .status-table .name-col { color: var(--gray-900); }
+  .status-table .type-col { color: var(--gray-700); font-size: 11px; }
+  .badge {
+    font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+  }
+  .badge-done    { background: var(--green-bg);  color: var(--green); }
+  .badge-active  { background: var(--nu-lilac);  color: var(--nu-purple); }
+  .badge-pending { background: var(--gray-100);  color: var(--gray-400); }
+  .badge-script  { background: var(--amber-bg);  color: var(--amber); }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 48px;
+    padding: 20px 48px;
+    background: var(--nu-dark);
+    color: var(--nu-light);
+    font-size: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .footer a { color: var(--nu-mid); text-decoration: none; }
+
+  /* ── Links section ── */
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .link-col-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 16px;
+    border-radius: 10px 10px 0 0;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .link-col-header.weduka { background: #3D0066; color: #E8D5F5; }
+  .link-col-header.roteiro { background: #1A5276; color: #D6EAF8; }
+  .link-col-header.drive { background: #1E8449; color: #D5F5E3; }
+  .link-col-icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .link-col-icon.weduka { background: rgba(255,255,255,0.15); }
+  .link-col-icon.roteiro { background: rgba(255,255,255,0.15); }
+  .link-col-icon.drive   { background: rgba(255,255,255,0.15); }
+
+  .link-col-body {
+    background: var(--white);
+    border: 1px solid var(--nu-light);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+  }
+  .link-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--gray-100);
+    gap: 10px;
+    transition: background 0.15s;
+  }
+  .link-item:last-child { border-bottom: none; }
+  .link-item:hover { background: var(--nu-lilac); }
+  .link-item-left { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .link-week { font-size: 10px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; }
+  .link-name { font-size: 12px; color: var(--gray-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .link-btn {
+    font-size: 10px; font-weight: 600; padding: 4px 10px;
+    border-radius: 20px; text-decoration: none; white-space: nowrap;
+    border: 1px solid; flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  .link-btn:hover { opacity: 0.75; }
+  .link-btn.weduka  { border-color: #820AD1; color: #820AD1; background: var(--nu-lilac); }
+  .link-btn.roteiro { border-color: #1565C0; color: #1565C0; background: var(--blue-bg); }
+  .link-btn.drive   { border-color: #1E8449; color: #1E8449; background: var(--green-bg); }
+  .link-btn.empty   { border-color: var(--gray-200); color: var(--gray-400); background: var(--gray-100); cursor: default; pointer-events: none; }
+
+  @media print {
+    body { background: #fff; }
+    .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="nu-logo">N</div>
+    <div>
+      <div class="header-title">Agenda Progressiva de Treinamentos — NuCel</div>
+      <div class="header-sub">T&D NuCel · Visão Gerencial · Janeiro – Maio 2026</div>
+    </div>
+  </div>
+  <div class="header-date">Gerado em abril / 2026</div>
+</div>
+
+<div class="page">
+
+  <!-- Metrics -->
+  <div class="section-label">indicadores gerais</div>
+  <div class="metrics">
+    <div class="metric-card">
+      <div class="metric-lbl">Total planejado</div>
+      <div class="metric-val purple">20</div>
+      <div class="metric-foot">treinamentos em 2026</div>
+    </div>
+    <div class="metric-card accent">
+      <div class="metric-lbl">Concluídos</div>
+      <div class="metric-val green">13</div>
+      <div class="metric-foot">65% do total</div>
+    </div>
+    <div class="metric-card warn">
+      <div class="metric-lbl">Em produção</div>
+      <div class="metric-val amber">2</div>
+      <div class="metric-foot">Semanas 17 e 18</div>
+    </div>
+    <div class="metric-card info">
+      <div class="metric-lbl">Meses cobertos</div>
+      <div class="metric-val blue">5</div>
+      <div class="metric-foot">Jan · Fev · Mar · Abr · Mai</div>
+    </div>
+  </div>
+
+  <!-- Month progress -->
+  <div class="section-label">progresso por mês</div>
+  <div class="months">
+    <div class="month-card done">
+      <div class="month-name">Janeiro</div>
+      <div class="month-num">3</div>
+      <div class="month-desc">treinamentos</div>
+      <div class="prog-bar-bg"><div class="prog-bar" style="width:100%"></div></div>
+      <div class="month-status done">Concluído</div>
+    </div>
+    <div class="month-card done">
+      <div class="month-name">Fevereiro</div>
+      <div class="month-num">3</div>
+      <div class="month-desc">treinamentos</div>
+      <div class="prog-bar-bg"><div class="prog-bar" style="width:100%"></div></div>
+      <div class="month-status done">Concluído</div>
+    </div>
+    <div class="month-card done">
+      <div class="month-name">Março</div>
+      <div class="month-num">4</div>
+      <div class="month-desc">treinamentos</div>
+      <div class="prog-bar-bg"><div class="prog-bar" style="width:100%"></div></div>
+      <div class="month-status done">Concluído</div>
+    </div>
+    <div class="month-card active">
+      <div class="month-name">Abril ✦</div>
+      <div class="month-num">3</div>
+      <div class="month-desc">2 em produção · 1 planejado</div>
+      <div class="prog-bar-bg"><div class="prog-bar" style="width:35%"></div></div>
+      <div class="month-status active">Em andamento</div>
+    </div>
+    <div class="month-card upcoming">
+      <div class="month-name">Maio</div>
+      <div class="month-num">4</div>
+      <div class="month-desc">todos planejados</div>
+      <div class="prog-bar-bg"><div class="prog-bar" style="width:0%"></div></div>
+      <div class="month-status upcoming">Planejado</div>
+    </div>
+  </div>
+
+  <!-- Formats + Chart -->
+  <div class="section-label">formatos e tipos</div>
+  <div class="row-two">
+    <div class="panel">
+      <div class="panel-title">Formatos produzidos</div>
+      <div class="fmt-row">
+        <div class="fmt-dot" style="background:#1565C0"></div>
+        <div class="fmt-name">Vídeo</div>
+        <div class="fmt-bg"><div class="fmt-fill" style="background:#1565C0;width:72%"></div></div>
+        <div class="fmt-count">13</div>
+      </div>
+      <div class="fmt-row">
+        <div class="fmt-dot" style="background:#820AD1"></div>
+        <div class="fmt-name">Apresentação (PPT)</div>
+        <div class="fmt-bg"><div class="fmt-fill" style="background:#820AD1;width:22%"></div></div>
+        <div class="fmt-count">4</div>
+      </div>
+      <div class="fmt-row">
+        <div class="fmt-dot" style="background:#D68910"></div>
+        <div class="fmt-name">Card</div>
+        <div class="fmt-bg"><div class="fmt-fill" style="background:#D68910;width:33%"></div></div>
+        <div class="fmt-count">6</div>
+      </div>
+      <div class="fmt-row">
+        <div class="fmt-dot" style="background:#880E4F"></div>
+        <div class="fmt-name">Pílula de Conhecimento</div>
+        <div class="fmt-bg"><div class="fmt-fill" style="background:#880E4F;width:17%"></div></div>
+        <div class="fmt-count">3</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">Distribuição por tipo de treinamento</div>
+      <div class="chart-wrap">
+        <canvas id="tipoChart" role="img" aria-label="Gráfico de rosca: Reforço de processo 11, Comportamental 5, Mandatório 3, Pílula de Conhecimento 3">Reforço de processo: 11, Comportamental: 5, Mandatório: 3, Pílula de Conhecimento: 3.</canvas>
+      </div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#820AD1"></div>Reforço de proc. (11)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1565C0"></div>Comportamental (5)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#D68910"></div>Mandatório (3)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#27AE60"></div>Pílula Conhec. (3)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="section-label">linha do tempo por semana</div>
+  <div class="panel timeline">
+    <div class="tl-row">
+      <div class="tl-month">Jan</div>
+      <div class="tl-chips">
+        <span class="chip chip-video">Mandatório · Vídeo</span>
+        <span class="chip chip-video">Mandatório · Vídeo</span>
+        <span class="chip chip-video">Mandatório · Vídeo</span>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-month">Fev</div>
+      <div class="tl-chips">
+        <span class="chip chip-video">W7 · Classificação Submetivos</span>
+        <span class="chip chip-video">W8 · Tratativa de chamadas</span>
+        <span class="chip chip-video">W11 · Coleta e escalagem</span>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-month">Mar</div>
+      <div class="tl-chips">
+        <span class="chip chip-video">W12 · Experiência além do script</span>
+        <span class="chip chip-ppt">W13 · Imersão NuCel</span>
+        <span class="chip chip-pilula">W15 · eSIM Regras</span>
+        <span class="chip chip-ppt">W16 · Diagnóstico checklist</span>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-month current">Abr</div>
+      <div class="tl-chips">
+        <span class="chip chip-active">W17 · Arte da Comunicação ✦</span>
+        <span class="chip chip-active">W18 · Glossário Submotivo ✦</span>
+        <span class="chip chip-video faded">W19 · Empatia NPS</span>
+      </div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-month">Mai</div>
+      <div class="tl-chips">
+        <span class="chip chip-video faded">W19 · Empatia NPS</span>
+        <span class="chip chip-video faded">W20 · Resolução 1º contato</span>
+        <span class="chip chip-card faded">Cards planejados</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status table -->
+  <div class="section-label">status de produção — semanas recentes e próximas</div>
+  <div class="panel">
+    <table class="status-table">
+      <thead>
+        <tr>
+          <th>Semana</th>
+          <th>Treinamento</th>
+          <th>Tipo</th>
+          <th>Formato</th>
+          <th>Roteiro</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="week-col">W12</td>
+          <td class="name-col">Experiência além do script</td>
+          <td class="type-col">Reforço de proc.</td>
+          <td class="type-col">Vídeo</td>
+          <td><span class="badge badge-done">Feito</span></td>
+          <td><span class="badge badge-done">Concluído</span></td>
+        </tr>
+        <tr>
+          <td class="week-col">W13</td>
+          <td class="name-col">Imersão NuCel — Funcionalidades</td>
+          <td class="type-col">Reforço de proc.</td>
+          <td class="type-col">PPT</td>
+          <td><span class="badge badge-done">Feito</span></td>
+          <td><span class="badge badge-done">Concluído</span></td>
+        </tr>
+        <tr>
+          <td class="week-col">W15</td>
+          <td class="name-col">Pílula: Domínio Regras eSIM</td>
+          <td class="type-col">Pílula Conhec.</td>
+          <td class="type-col">PPT</td>
+          <td><span class="badge badge-done">Feito</span></td>
+          <td><span class="badge badge-done">Concluído</span></td>
+        </tr>
+        <tr>
+          <td class="week-col">W16</td>
+          <td class="name-col">Diagnóstico: onde o checklist falha</td>
+          <td class="type-col">Reforço de proc.</td>
+          <td class="type-col">PPT</td>
+          <td><span class="badge badge-done">Feito</span></td>
+          <td><span class="badge badge-done">Concluído</span></td>
+        </tr>
+        <tr style="background:#FAF5FF">
+          <td class="week-col">W17</td>
+          <td class="name-col"><strong>A Arte da Comunicação em NuCel</strong></td>
+          <td class="type-col">Comportamental</td>
+          <td class="type-col">PPT</td>
+          <td><span class="badge badge-script">Em andamento</span></td>
+          <td><span class="badge badge-active">Em produção ✦</span></td>
+        </tr>
+        <tr style="background:#FAF5FF">
+          <td class="week-col">W18</td>
+          <td class="name-col"><strong>Pílula de Conhecimento: Glossário Submotivo</strong></td>
+          <td class="type-col">Pílula Conhec.</td>
+          <td class="type-col">PPT</td>
+          <td><span class="badge badge-script">Em andamento</span></td>
+          <td><span class="badge badge-active">Em produção ✦</span></td>
+        </tr>
+        <tr>
+          <td class="week-col">W19</td>
+          <td class="name-col">Empatia em casos técnicos: NPS 0 vs 10</td>
+          <td class="type-col">Comportamental</td>
+          <td class="type-col">Vídeo</td>
+          <td><span class="badge badge-pending">Pendente</span></td>
+          <td><span class="badge badge-pending">Planejado</span></td>
+        </tr>
+        <tr>
+          <td class="week-col">W20</td>
+          <td class="name-col">Resolução no 1º contato: técnicas e gatilhos</td>
+          <td class="type-col">Comportamental</td>
+          <td class="type-col">Vídeo</td>
+          <td><span class="badge badge-pending">Pendente</span></td>
+          <td><span class="badge badge-pending">Planejado</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Links rápidos -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:32px;margin-bottom:12px;">
+    <div class="section-label" style="margin:0">links de acesso rápido — weduka · roteiro · drive</div>
+    <button id="btnEditar" onclick="toggleEditor()" style="font-family:var(--font);font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;border:1.5px solid var(--nu-purple);color:var(--nu-purple);background:var(--nu-lilac);cursor:pointer;letter-spacing:0.04em;">✏️ Editar links</button>
+  </div>
+
+  <!-- Editor modal -->
+  <div id="editorPanel" style="display:none;background:var(--white);border:1.5px solid var(--nu-purple);border-radius:16px;padding:24px;margin-bottom:20px;">
+    <div style="font-size:13px;font-weight:600;color:var(--nu-dark);margin-bottom:4px;">Modo de edição — atualize os links abaixo</div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:18px;">Clique em "Salvar alterações" após editar. Para baixar o arquivo atualizado, use o botão "Baixar HTML atualizado".</div>
+    <div id="editorRows" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+      <button onclick="salvarEdicoes()" style="font-family:var(--font);font-size:12px;font-weight:600;padding:8px 20px;border-radius:20px;background:var(--nu-purple);color:#fff;border:none;cursor:pointer;">✓ Salvar alterações</button>
+      <button onclick="baixarHTML()" style="font-family:var(--font);font-size:12px;font-weight:600;padding:8px 20px;border-radius:20px;background:var(--nu-dark);color:#fff;border:none;cursor:pointer;">⬇ Baixar HTML atualizado</button>
+      <button onclick="toggleEditor()" style="font-family:var(--font);font-size:12px;font-weight:600;padding:8px 20px;border-radius:20px;border:1px solid var(--gray-200);color:var(--gray-700);background:var(--white);cursor:pointer;">Fechar</button>
+    </div>
+    <div id="salvoMsg" style="display:none;margin-top:10px;font-size:12px;color:var(--green);font-weight:600;">✓ Alterações salvas!</div>
+  </div>
+
+  <div class="links-grid" id="linksGrid"></div>
+
+  <p style="font-size:11px;color:var(--gray-400);margin-top:10px;">* Links cinza ainda não foram publicados. Use o botão "Editar links" para adicionar novos links conforme os conteúdos forem ao ar.</p>
+
+</div><!-- /page -->
+
+<div class="footer">
+  <div>T&D NuCel · Agenda Progressiva 2026 · documento interno</div>
+  <div>✦ em produção agora — abril 2026</div>
+</div>
+
+<script>
+  new Chart(document.getElementById('tipoChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Reforço de proc.','Comportamental','Mandatório','Pílula Conhec.'],
+      datasets: [{
+        data: [11, 5, 3, 3],
+        backgroundColor: ['#820AD1','#1565C0','#D68910','#27AE60'],
+        borderWidth: 0,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw} treinamentos` } }
+      }
+    }
+  });
+
+  // ── Dados dos treinamentos ──
+  const DRIVE = 'https://drive.google.com/drive/folders/1rg0mKEg06jH9aXGfgG9ed10kheA-J6kK?usp=drive_link';
+  const DRIVE_ROTEIRO = 'https://drive.google.com/drive/folders/1rg0mKEg06jH9aXGfgG9ed10kheA-J6kK?usp=drive_link';
+
+  let treinamentos = [
+    { semana:'W7',  mes:'Fev', nome:'Classificação Submetivos',         weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
+    { semana:'W8',  mes:'Fev', nome:'Tratativa de chamadas',             weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
+    { semana:'W11', mes:'Fev', nome:'Coleta e escalagem',                weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5801',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
+    { semana:'W12', mes:'Mar', nome:'Experiência além do script',        weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5827',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
+    { semana:'W13', mes:'Mar', nome:'Imersão NuCel — Funcionalidades',   weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5851',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
+    { semana:'W15', mes:'Mar', nome:'Pílula: Regras eSIM',               weduka:'https://nubank.weduka.com.br/DocumentFind/Document?idDocument=22175&logType=12&idlogSearch=30897788', roteiro:'', drive: DRIVE },
+    { semana:'W16', mes:'Mar', nome:'Diagnóstico: checklist falha',      weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5909',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
+    { semana:'W17', mes:'Abr ✦', nome:'Arte da Comunicação',            weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5924',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
+    { semana:'W18', mes:'Abr ✦', nome:'Glossário Submotivo',            weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
+    { semana:'W19', mes:'Mai',  nome:'Empatia NPS 0 vs 10',              weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
+    { semana:'W20', mes:'Mai',  nome:'Resolução 1º contato',             weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
+  ];
+
+  function btnHtml(url, tipo, label) {
+    if (!url) return `<span class="link-btn empty">${label}</span>`;
+    return `<a href="${url}" target="_blank" class="link-btn ${tipo}">Abrir →</a>`;
+  }
+
+  function renderGrid() {
+    const cols = [
+      { key:'weduka',  label:'Weduka',           cls:'weduka', icon:'W' },
+      { key:'roteiro', label:'Roteiro (Drive)',   cls:'roteiro', icon:'R' },
+      { key:'drive',   label:'Drive — Conteúdos', cls:'drive',   icon:'▲' },
+    ];
+    const grid = document.getElementById('linksGrid');
+    grid.innerHTML = cols.map(col => `
+      <div>
+        <div class="link-col-header ${col.cls}">
+          <div class="link-col-icon ${col.cls}">${col.icon}</div>
+          ${col.label}
+        </div>
+        <div class="link-col-body">
+          ${treinamentos.map(t => `
+            <div class="link-item">
+              <div class="link-item-left">
+                <span class="link-week">${t.semana} · ${t.mes}</span>
+                <span class="link-name">${t.nome}</span>
+              </div>
+              ${btnHtml(t[col.key], col.cls, t[col.key] ? 'Abrir →' : (t.semana==='W17'||t.semana==='W18' ? 'Em prod.' : 'Pendente'))}
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function renderEditor() {
+    const rows = document.getElementById('editorRows');
+    rows.innerHTML = treinamentos.map((t, i) => `
+      <div style="background:var(--gray-100);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;font-weight:600;color:var(--nu-dark);margin-bottom:10px;">${t.semana} · ${t.nome}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div>
+            <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Weduka</div>
+            <input type="text" value="${t.weduka}" data-idx="${i}" data-field="weduka"
+              placeholder="https://nubank.weduka.com.br/..."
+              style="font-family:var(--font);font-size:11px;width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;color:var(--gray-900);">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Roteiro</div>
+            <input type="text" value="${t.roteiro}" data-idx="${i}" data-field="roteiro"
+              placeholder="https://drive.google.com/..."
+              style="font-family:var(--font);font-size:11px;width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;color:var(--gray-900);">
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Drive</div>
+            <input type="text" value="${t.drive}" data-idx="${i}" data-field="drive"
+              placeholder="https://drive.google.com/..."
+              style="font-family:var(--font);font-size:11px;width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;color:var(--gray-900);">
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function toggleEditor() {
+    const p = document.getElementById('editorPanel');
+    const btn = document.getElementById('btnEditar');
+    if (p.style.display === 'none') {
+      renderEditor();
+      p.style.display = 'block';
+      btn.textContent = '✕ Fechar editor';
+    } else {
+      p.style.display = 'none';
+      btn.textContent = '✏️ Editar links';
+    }
+  }
+
+  function salvarEdicoes() {
+    document.querySelectorAll('#editorRows input').forEach(inp => {
+      const i = parseInt(inp.dataset.idx);
+      const f = inp.dataset.field;
+      treinamentos[i][f] = inp.value.trim();
+    });
+    renderGrid();
+    const msg = document.getElementById('salvoMsg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 2500);
+  }
+
+  function baixarHTML() {
+    salvarEdicoes();
+    const html = document.documentElement.outerHTML;
+    const blob = new Blob([html], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'agenda_progressiva_nucel_2026.html';
+    a.click();
+  }
+
+  renderGrid();
+</script>
+</body>
+</html>
