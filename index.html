@@ -1,691 +1,375 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Agenda Progressiva NuCel 2026 — T&D</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+const { useState, useEffect, useMemo } = React;
 
-  :root {
-    --nu-dark:    #3D0066;
-    --nu-purple:  #820AD1;
-    --nu-mid:     #A855D8;
-    --nu-light:   #E8D5F5;
-    --nu-lilac:   #F3E8FD;
-    --nu-pale:    #FAF5FF;
-    --white:      #FFFFFF;
-    --gray-100:   #F7F3FB;
-    --gray-200:   #EDE8F3;
-    --gray-400:   #B8A8CC;
-    --gray-700:   #5A4870;
-    --gray-900:   #1A0A2E;
-    --green:      #27AE60;
-    --green-bg:   #E8F8F0;
-    --amber:      #D68910;
-    --amber-bg:   #FEF9EC;
-    --blue:       #1565C0;
-    --blue-bg:    #E8F0FE;
-    --font: 'Sora', sans-serif;
-  }
+// --- Ícones SVG Inline (Sistema de Design Nu) ---
+const Icons = {
+  Signal: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M2 20h.01"/><path d="M7 20v-4"/><path d="M12 20v-8"/><path d="M17 20V8"/><path d="M22 20V4"/></svg>,
+  Smartphone: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>,
+  Shield: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  Zap: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+  FileText: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  CheckCircle: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+  AlertCircle: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-red-500"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>,
+  ArrowRight: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+  Repeat: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
+};
 
-  body {
-    font-family: var(--font);
-    background: var(--nu-pale);
-    color: var(--gray-900);
-    min-height: 100vh;
-    padding: 0;
-  }
-
-  /* ── Header ── */
-  .header {
-    background: var(--nu-dark);
-    padding: 28px 48px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .header-left { display: flex; align-items: center; gap: 16px; }
-  .nu-logo {
-    width: 42px; height: 42px; border-radius: 50%;
-    background: var(--nu-purple);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 700; color: #fff;
-  }
-  .header-title { color: #fff; font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
-  .header-sub { color: var(--nu-light); font-size: 13px; font-weight: 300; margin-top: 2px; }
-  .header-date { color: var(--nu-light); font-size: 12px; font-weight: 400; }
-
-  /* ── Layout ── */
-  .page { max-width: 1100px; margin: 0 auto; padding: 36px 40px 60px; }
-
-  /* ── Section label ── */
-  .section-label {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--nu-purple);
-    margin: 32px 0 12px;
-  }
-
-  /* ── Metric cards ── */
-  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
-  .metric-card {
-    background: var(--white);
-    border-radius: 16px;
-    padding: 22px 20px;
-    border: 1px solid var(--nu-light);
-    position: relative;
-    overflow: hidden;
-  }
-  .metric-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: var(--nu-purple);
-  }
-  .metric-card.accent::before { background: var(--green); }
-  .metric-card.warn::before { background: var(--amber); }
-  .metric-card.info::before { background: var(--blue); }
-  .metric-lbl { font-size: 11px; color: var(--gray-700); font-weight: 500; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.06em; }
-  .metric-val { font-size: 36px; font-weight: 700; color: var(--nu-dark); line-height: 1; }
-  .metric-val.purple { color: var(--nu-purple); }
-  .metric-val.green  { color: var(--green); }
-  .metric-val.amber  { color: var(--amber); }
-  .metric-val.blue   { color: var(--blue); }
-  .metric-foot { font-size: 12px; color: var(--gray-400); margin-top: 6px; }
-
-  /* ── Month progress ── */
-  .months { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-  .month-card {
-    background: var(--white);
-    border: 1px solid var(--nu-light);
-    border-radius: 16px;
-    padding: 18px 16px;
-  }
-  .month-card.done { border-top: 3px solid var(--nu-purple); }
-  .month-card.active { border-top: 3px solid var(--amber); }
-  .month-card.upcoming { border-top: 3px solid var(--gray-200); }
-  .month-name { font-size: 13px; font-weight: 600; color: var(--nu-dark); margin-bottom: 10px; }
-  .month-num { font-size: 30px; font-weight: 700; color: var(--nu-purple); line-height: 1; }
-  .month-card.active .month-num { color: var(--amber); }
-  .month-card.upcoming .month-num { color: var(--gray-400); }
-  .month-desc { font-size: 11px; color: var(--gray-400); margin-top: 3px; margin-bottom: 10px; }
-  .prog-bar-bg { height: 5px; background: var(--gray-200); border-radius: 3px; }
-  .prog-bar { height: 5px; border-radius: 3px; background: var(--nu-purple); transition: width 1s; }
-  .month-card.active .prog-bar { background: var(--amber); }
-  .month-status {
-    margin-top: 8px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .month-status.done   { color: var(--nu-purple); }
-  .month-status.active { color: var(--amber); }
-  .month-status.upcoming { color: var(--gray-400); }
-
-  /* ── Row two ── */
-  .row-two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .panel {
-    background: var(--white);
-    border: 1px solid var(--nu-light);
-    border-radius: 16px;
-    padding: 22px;
-  }
-  .panel-title {
-    font-size: 12px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--gray-700); margin-bottom: 16px;
-  }
-
-  /* Formato bars */
-  .fmt-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--gray-100); }
-  .fmt-row:last-child { border-bottom: none; }
-  .fmt-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-  .fmt-name { font-size: 13px; color: var(--gray-900); flex: 1; }
-  .fmt-bg { flex: 2; height: 7px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
-  .fmt-fill { height: 7px; border-radius: 4px; }
-  .fmt-count { font-size: 13px; font-weight: 600; color: var(--nu-dark); min-width: 24px; text-align: right; }
-
-  /* Chart */
-  .chart-wrap { position: relative; width: 100%; height: 200px; }
-  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 11px; color: var(--gray-700); }
-  .legend-item { display: flex; align-items: center; gap: 5px; }
-  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
-
-  /* ── Timeline ── */
-  .timeline { }
-  .tl-row { display: grid; grid-template-columns: 68px 1fr; gap: 0; }
-  .tl-month {
-    font-size: 11px; font-weight: 600; color: var(--gray-700);
-    padding: 10px 14px 10px 0; text-align: right;
-    border-right: 2px solid var(--gray-200);
-    display: flex; align-items: flex-start; justify-content: flex-end; padding-top: 13px;
-    text-transform: uppercase; letter-spacing: 0.06em;
-  }
-  .tl-month.current { border-right: 2px solid var(--nu-purple); color: var(--nu-purple); }
-  .tl-chips { padding: 8px 0 8px 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .chip {
-    font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px;
-    white-space: nowrap;
-  }
-  .chip-video   { background: var(--blue-bg);   color: var(--blue); }
-  .chip-ppt     { background: var(--nu-lilac);   color: var(--nu-dark); }
-  .chip-card    { background: var(--amber-bg);   color: var(--amber); }
-  .chip-pilula  { background: #FCE4EC;            color: #880E4F; }
-  .chip.faded   { opacity: 0.45; }
-  .chip-active  { background: var(--nu-purple); color: #fff; }
-
-  /* ── Status table ── */
-  .status-table { width: 100%; border-collapse: collapse; }
-  .status-table th {
-    font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--gray-400); font-weight: 600; padding: 8px 12px;
-    border-bottom: 1px solid var(--gray-200); text-align: left;
-  }
-  .status-table td { padding: 11px 12px; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
-  .status-table tr:last-child td { border-bottom: none; }
-  .status-table .week-col { color: var(--gray-400); font-size: 11px; font-weight: 600; }
-  .status-table .name-col { color: var(--gray-900); }
-  .status-table .type-col { color: var(--gray-700); font-size: 11px; }
-  .badge {
-    font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 20px;
-    text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
-  }
-  .badge-done    { background: var(--green-bg);  color: var(--green); }
-  .badge-active  { background: var(--nu-lilac);  color: var(--nu-purple); }
-  .badge-pending { background: var(--gray-100);  color: var(--gray-400); }
-  .badge-script  { background: var(--amber-bg);  color: var(--amber); }
-
-  /* ── Footer ── */
-  .footer {
-    margin-top: 48px;
-    padding: 20px 48px;
-    background: var(--nu-dark);
-    color: var(--nu-light);
-    font-size: 12px;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .footer a { color: var(--nu-mid); text-decoration: none; }
-
-  /* ── Links section ── */
-  .links-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-  }
-  .link-col-header {
-    display: flex; align-items: center; gap: 8px;
-    padding: 12px 16px;
-    border-radius: 10px 10px 0 0;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
-  }
-  .link-col-header.weduka { background: #3D0066; color: #E8D5F5; }
-  .link-col-header.roteiro { background: #1A5276; color: #D6EAF8; }
-  .link-col-header.drive { background: #1E8449; color: #D5F5E3; }
-  .link-col-icon {
-    width: 22px; height: 22px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 13px; flex-shrink: 0;
-  }
-  .link-col-icon.weduka { background: rgba(255,255,255,0.15); }
-  .link-col-icon.roteiro { background: rgba(255,255,255,0.15); }
-  .link-col-icon.drive   { background: rgba(255,255,255,0.15); }
-
-  .link-col-body {
-    background: var(--white);
-    border: 1px solid var(--nu-light);
-    border-top: none;
-    border-radius: 0 0 10px 10px;
-    overflow: hidden;
-  }
-  .link-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 11px 14px;
-    border-bottom: 1px solid var(--gray-100);
-    gap: 10px;
-    transition: background 0.15s;
-  }
-  .link-item:last-child { border-bottom: none; }
-  .link-item:hover { background: var(--nu-lilac); }
-  .link-item-left { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
-  .link-week { font-size: 10px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.06em; }
-  .link-name { font-size: 12px; color: var(--gray-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .link-btn {
-    font-size: 10px; font-weight: 600; padding: 4px 10px;
-    border-radius: 20px; text-decoration: none; white-space: nowrap;
-    border: 1px solid; flex-shrink: 0;
-    transition: opacity 0.15s;
-  }
-  .link-btn:hover { opacity: 0.75; }
-  .link-btn.weduka  { border-color: #820AD1; color: #820AD1; background: var(--nu-lilac); }
-  .link-btn.roteiro { border-color: #1565C0; color: #1565C0; background: var(--blue-bg); }
-  .link-btn.drive   { border-color: #1E8449; color: #1E8449; background: var(--green-bg); }
-  .link-btn.empty   { border-color: var(--gray-200); color: var(--gray-400); background: var(--gray-100); cursor: default; pointer-events: none; }
-
-  @media print {
-    body { background: #fff; }
-    .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  }
-</style>
-</head>
-<body>
-
-<div class="header">
-  <div class="header-left">
-    <div class="nu-logo">N</div>
-    <div>
-      <div class="header-title">Agenda Progressiva de Treinamentos — NuCel</div>
-      <div class="header-sub">T&D NuCel · Visão Gerencial · Janeiro – Maio 2026</div>
-    </div>
+// --- Componente de Notificação Customizado ---
+const Toast = ({ message, type, onClose }) => (
+  <div className={`fixed bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-3 animate-slide-up ${type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+    {type === 'success' ? <Icons.CheckCircle /> : <Icons.AlertCircle />}
+    <span className="font-medium">{message}</span>
+    <button onClick={onClose} className="ml-2 hover:opacity-70">×</button>
   </div>
-  <div class="header-date">Gerado em abril / 2026</div>
-</div>
+);
 
-<div class="page">
+const App = () => {
+  const [currentModule, setCurrentModule] = useState(0);
+  const [completedModules, setCompletedModules] = useState([]);
+  const [quizScore, setQuizScore] = useState(null);
+  const [showToast, setShowToast] = useState(null);
+  const [userName, setUserName] = useState(localStorage.getItem('nucel_user') || '');
+  const [appStarted, setAppStarted] = useState(false);
 
-  <!-- Metrics -->
-  <div class="section-label">indicadores gerais</div>
-  <div class="metrics">
-    <div class="metric-card">
-      <div class="metric-lbl">Total planejado</div>
-      <div class="metric-val purple">20</div>
-      <div class="metric-foot">treinamentos em 2026</div>
-    </div>
-    <div class="metric-card accent">
-      <div class="metric-lbl">Concluídos</div>
-      <div class="metric-val green">13</div>
-      <div class="metric-foot">65% do total</div>
-    </div>
-    <div class="metric-card warn">
-      <div class="metric-lbl">Em produção</div>
-      <div class="metric-val amber">2</div>
-      <div class="metric-foot">Semanas 17 e 18</div>
-    </div>
-    <div class="metric-card info">
-      <div class="metric-lbl">Meses cobertos</div>
-      <div class="metric-val blue">5</div>
-      <div class="metric-foot">Jan · Fev · Mar · Abr · Mai</div>
-    </div>
-  </div>
-
-  <!-- Month progress -->
-  <div class="section-label">progresso por mês</div>
-  <div class="months">
-    <div class="month-card done">
-      <div class="month-name">Janeiro</div>
-      <div class="month-num">3</div>
-      <div class="month-desc">treinamentos</div>
-      <div class="prog-bar-bg"><div class="prog-bar" style="width:100%"></div></div>
-      <div class="month-status done">Concluído</div>
-    </div>
-    <div class="month-card done">
-      <div class="month-name">Fevereiro</div>
-      <div class="month-num">3</div>
-      <div class="month-desc">treinamentos</div>
-      <div class="prog-bar-bg"><div class="prog-bar" style="width:100%"></div></div>
-      <div class="month-status done">Concluído</div>
-    </div>
-    <div class="month-card done">
-      <div class="month-name">Março</div>
-      <div class="month-num">4</div>
-      <div class="month-desc">treinamentos</div>
-      <div class="prog-bar-bg"><div class="prog-bar" style="width:100%"></div></div>
-      <div class="month-status done">Concluído</div>
-    </div>
-    <div class="month-card active">
-      <div class="month-name">Abril ✦</div>
-      <div class="month-num">3</div>
-      <div class="month-desc">2 em produção · 1 planejado</div>
-      <div class="prog-bar-bg"><div class="prog-bar" style="width:35%"></div></div>
-      <div class="month-status active">Em andamento</div>
-    </div>
-    <div class="month-card upcoming">
-      <div class="month-name">Maio</div>
-      <div class="month-num">4</div>
-      <div class="month-desc">todos planejados</div>
-      <div class="prog-bar-bg"><div class="prog-bar" style="width:0%"></div></div>
-      <div class="month-status upcoming">Planejado</div>
-    </div>
-  </div>
-
-  <!-- Formats + Chart -->
-  <div class="section-label">formatos e tipos</div>
-  <div class="row-two">
-    <div class="panel">
-      <div class="panel-title">Formatos produzidos</div>
-      <div class="fmt-row">
-        <div class="fmt-dot" style="background:#1565C0"></div>
-        <div class="fmt-name">Vídeo</div>
-        <div class="fmt-bg"><div class="fmt-fill" style="background:#1565C0;width:72%"></div></div>
-        <div class="fmt-count">13</div>
-      </div>
-      <div class="fmt-row">
-        <div class="fmt-dot" style="background:#820AD1"></div>
-        <div class="fmt-name">Apresentação (PPT)</div>
-        <div class="fmt-bg"><div class="fmt-fill" style="background:#820AD1;width:22%"></div></div>
-        <div class="fmt-count">4</div>
-      </div>
-      <div class="fmt-row">
-        <div class="fmt-dot" style="background:#D68910"></div>
-        <div class="fmt-name">Card</div>
-        <div class="fmt-bg"><div class="fmt-fill" style="background:#D68910;width:33%"></div></div>
-        <div class="fmt-count">6</div>
-      </div>
-      <div class="fmt-row">
-        <div class="fmt-dot" style="background:#880E4F"></div>
-        <div class="fmt-name">Pílula de Conhecimento</div>
-        <div class="fmt-bg"><div class="fmt-fill" style="background:#880E4F;width:17%"></div></div>
-        <div class="fmt-count">3</div>
-      </div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Distribuição por tipo de treinamento</div>
-      <div class="chart-wrap">
-        <canvas id="tipoChart" role="img" aria-label="Gráfico de rosca: Reforço de processo 11, Comportamental 5, Mandatório 3, Pílula de Conhecimento 3">Reforço de processo: 11, Comportamental: 5, Mandatório: 3, Pílula de Conhecimento: 3.</canvas>
-      </div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#820AD1"></div>Reforço de proc. (11)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#1565C0"></div>Comportamental (5)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#D68910"></div>Mandatório (3)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#27AE60"></div>Pílula Conhec. (3)</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Timeline -->
-  <div class="section-label">linha do tempo por semana</div>
-  <div class="panel timeline">
-    <div class="tl-row">
-      <div class="tl-month">Jan</div>
-      <div class="tl-chips">
-        <span class="chip chip-video">Mandatório · Vídeo</span>
-        <span class="chip chip-video">Mandatório · Vídeo</span>
-        <span class="chip chip-video">Mandatório · Vídeo</span>
-      </div>
-    </div>
-    <div class="tl-row">
-      <div class="tl-month">Fev</div>
-      <div class="tl-chips">
-        <span class="chip chip-video">W7 · Classificação Submetivos</span>
-        <span class="chip chip-video">W8 · Tratativa de chamadas</span>
-        <span class="chip chip-video">W11 · Coleta e escalagem</span>
-      </div>
-    </div>
-    <div class="tl-row">
-      <div class="tl-month">Mar</div>
-      <div class="tl-chips">
-        <span class="chip chip-video">W12 · Experiência além do script</span>
-        <span class="chip chip-ppt">W13 · Imersão NuCel</span>
-        <span class="chip chip-pilula">W15 · eSIM Regras</span>
-        <span class="chip chip-ppt">W16 · Diagnóstico checklist</span>
-      </div>
-    </div>
-    <div class="tl-row">
-      <div class="tl-month current">Abr</div>
-      <div class="tl-chips">
-        <span class="chip chip-active">W17 · Arte da Comunicação ✦</span>
-        <span class="chip chip-active">W18 · Glossário Submotivo ✦</span>
-        <span class="chip chip-video faded">W19 · Empatia NPS</span>
-      </div>
-    </div>
-    <div class="tl-row">
-      <div class="tl-month">Mai</div>
-      <div class="tl-chips">
-        <span class="chip chip-video faded">W19 · Empatia NPS</span>
-        <span class="chip chip-video faded">W20 · Resolução 1º contato</span>
-        <span class="chip chip-card faded">Cards planejados</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Status table -->
-  <div class="section-label">status de produção — semanas recentes e próximas</div>
-  <div class="panel">
-    <table class="status-table">
-      <thead>
-        <tr>
-          <th>Semana</th>
-          <th>Treinamento</th>
-          <th>Tipo</th>
-          <th>Formato</th>
-          <th>Roteiro</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="week-col">W12</td>
-          <td class="name-col">Experiência além do script</td>
-          <td class="type-col">Reforço de proc.</td>
-          <td class="type-col">Vídeo</td>
-          <td><span class="badge badge-done">Feito</span></td>
-          <td><span class="badge badge-done">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="week-col">W13</td>
-          <td class="name-col">Imersão NuCel — Funcionalidades</td>
-          <td class="type-col">Reforço de proc.</td>
-          <td class="type-col">PPT</td>
-          <td><span class="badge badge-done">Feito</span></td>
-          <td><span class="badge badge-done">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="week-col">W15</td>
-          <td class="name-col">Pílula: Domínio Regras eSIM</td>
-          <td class="type-col">Pílula Conhec.</td>
-          <td class="type-col">PPT</td>
-          <td><span class="badge badge-done">Feito</span></td>
-          <td><span class="badge badge-done">Concluído</span></td>
-        </tr>
-        <tr>
-          <td class="week-col">W16</td>
-          <td class="name-col">Diagnóstico: onde o checklist falha</td>
-          <td class="type-col">Reforço de proc.</td>
-          <td class="type-col">PPT</td>
-          <td><span class="badge badge-done">Feito</span></td>
-          <td><span class="badge badge-done">Concluído</span></td>
-        </tr>
-        <tr style="background:#FAF5FF">
-          <td class="week-col">W17</td>
-          <td class="name-col"><strong>A Arte da Comunicação em NuCel</strong></td>
-          <td class="type-col">Comportamental</td>
-          <td class="type-col">PPT</td>
-          <td><span class="badge badge-script">Em andamento</span></td>
-          <td><span class="badge badge-active">Em produção ✦</span></td>
-        </tr>
-        <tr style="background:#FAF5FF">
-          <td class="week-col">W18</td>
-          <td class="name-col"><strong>Pílula de Conhecimento: Glossário Submotivo</strong></td>
-          <td class="type-col">Pílula Conhec.</td>
-          <td class="type-col">PPT</td>
-          <td><span class="badge badge-script">Em andamento</span></td>
-          <td><span class="badge badge-active">Em produção ✦</span></td>
-        </tr>
-        <tr>
-          <td class="week-col">W19</td>
-          <td class="name-col">Empatia em casos técnicos: NPS 0 vs 10</td>
-          <td class="type-col">Comportamental</td>
-          <td class="type-col">Vídeo</td>
-          <td><span class="badge badge-pending">Pendente</span></td>
-          <td><span class="badge badge-pending">Planejado</span></td>
-        </tr>
-        <tr>
-          <td class="week-col">W20</td>
-          <td class="name-col">Resolução no 1º contato: técnicas e gatilhos</td>
-          <td class="type-col">Comportamental</td>
-          <td class="type-col">Vídeo</td>
-          <td><span class="badge badge-pending">Pendente</span></td>
-          <td><span class="badge badge-pending">Planejado</span></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Links rápidos -->
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:32px;margin-bottom:12px;">
-    <div class="section-label" style="margin:0">links de acesso rápido — weduka · roteiro · drive</div>
-    <button id="btnEditar" onclick="toggleEditor()" style="font-family:var(--font);font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;border:1.5px solid var(--nu-purple);color:var(--nu-purple);background:var(--nu-lilac);cursor:pointer;letter-spacing:0.04em;">✏️ Editar links</button>
-  </div>
-
-  <!-- Editor modal -->
-  <div id="editorPanel" style="display:none;background:var(--white);border:1.5px solid var(--nu-purple);border-radius:16px;padding:24px;margin-bottom:20px;">
-    <div style="font-size:13px;font-weight:600;color:var(--nu-dark);margin-bottom:4px;">Modo de edição — atualize os links abaixo</div>
-    <div style="font-size:12px;color:var(--gray-400);margin-bottom:18px;">Clique em "Salvar alterações" após editar. Para baixar o arquivo atualizado, use o botão "Baixar HTML atualizado".</div>
-    <div id="editorRows" style="display:flex;flex-direction:column;gap:10px;"></div>
-    <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
-      <button onclick="salvarEdicoes()" style="font-family:var(--font);font-size:12px;font-weight:600;padding:8px 20px;border-radius:20px;background:var(--nu-purple);color:#fff;border:none;cursor:pointer;">✓ Salvar alterações</button>
-      <button onclick="baixarHTML()" style="font-family:var(--font);font-size:12px;font-weight:600;padding:8px 20px;border-radius:20px;background:var(--nu-dark);color:#fff;border:none;cursor:pointer;">⬇ Baixar HTML atualizado</button>
-      <button onclick="toggleEditor()" style="font-family:var(--font);font-size:12px;font-weight:600;padding:8px 20px;border-radius:20px;border:1px solid var(--gray-200);color:var(--gray-700);background:var(--white);cursor:pointer;">Fechar</button>
-    </div>
-    <div id="salvoMsg" style="display:none;margin-top:10px;font-size:12px;color:var(--green);font-weight:600;">✓ Alterações salvas!</div>
-  </div>
-
-  <div class="links-grid" id="linksGrid"></div>
-
-  <p style="font-size:11px;color:var(--gray-400);margin-top:10px;">* Links cinza ainda não foram publicados. Use o botão "Editar links" para adicionar novos links conforme os conteúdos forem ao ar.</p>
-
-</div><!-- /page -->
-
-<div class="footer">
-  <div>T&D NuCel · Agenda Progressiva 2026 · documento interno</div>
-  <div>✦ em produção agora — abril 2026</div>
-</div>
-
-<script>
-  new Chart(document.getElementById('tipoChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Reforço de proc.','Comportamental','Mandatório','Pílula Conhec.'],
-      datasets: [{
-        data: [11, 5, 3, 3],
-        backgroundColor: ['#820AD1','#1565C0','#D68910','#27AE60'],
-        borderWidth: 0,
-        borderRadius: 4
-      }]
+  const modules = [
+    {
+      id: 0,
+      title: "Ativação e Início",
+      icon: <Icons.Smartphone />,
+      content: (
+        <div className="space-y-6">
+          <p className="text-lg text-gray-600">O NuCel foi desenhado para ser 100% digital. A jornada começa no app, ao lado do Shopping Nu.</p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white p-6 rounded-nu nu-card-shadow border-t-4 border-nucel-purple">
+              <h3 className="font-title text-xl text-nucel-purple mb-3">eSIM (Digital)</h3>
+              <p className="text-sm text-gray-500 mb-4">Ativação instantânea via "Universal Link" (iOS) ou redirecionamento direto no Android.</p>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-center gap-2">✅ Sem espera por entrega</li>
+                <li className="flex items-center gap-2">✅ Seguro contra furtos físicos</li>
+              </ul>
+            </div>
+            <div className="bg-white p-6 rounded-nu nu-card-shadow border-t-4 border-gray-300">
+              <h3 className="font-title text-xl text-gray-700 mb-3">Chip Físico (pSIM)</h3>
+              <p className="text-sm text-gray-500 mb-4">Para quem prefere o modo tradicional. Recebe em casa e ativa via QR Code.</p>
+              <ul className="text-sm space-y-2">
+                <li className="flex items-center gap-2">📍 QR Code no verso do cartão</li>
+                <li className="flex items-center gap-2">📱 Ativação manual no app</li>
+              </ul>
+            </div>
+          </div>
+          <div className="bg-nucel-purpleLight p-4 rounded-xl flex items-start gap-3">
+             <div className="text-nucel-purple font-bold">Dica:</div>
+             <p className="text-sm text-nucel-purpleDark italic">Os pacotes adicionais (Top-Up) custam R$10 por 2GB e valem por 30 dias!</p>
+          </div>
+        </div>
+      )
     },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '62%',
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw} treinamentos` } }
-      }
+    {
+      id: 1,
+      title: "Benefícios NuCel",
+      icon: <Icons.Zap />,
+      content: (
+        <div className="space-y-6">
+          <div className="bg-nucel-purple p-8 rounded-nu text-white relative overflow-hidden">
+            <div className="relative z-10">
+              <h2 className="text-3xl font-title mb-4">A Caixinha Turbo 🚀</h2>
+              <p className="max-w-md">Ser cliente NuCel dá direito a uma caixinha exclusiva com rendimento de <strong>120% do CDI</strong>. É o seu dinheiro rendendo mais enquanto você navega.</p>
+            </div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+             <div className="p-6 bg-white rounded-nu border border-gray-100 nu-card-shadow">
+                <h4 className="font-bold flex items-center gap-2 mb-2"><Icons.Signal /> Reserva de GB</h4>
+                <p className="text-sm text-gray-600">Funciona como um seguro. Ativa automaticamente de 1 em 1 GB quando atingir 95% do uso.</p>
+                <div className="mt-2 text-xs font-semibold text-nucel-purple">UV/Nu+: 10GB | Roxinho: 2GB</div>
+             </div>
+             <div className="p-6 bg-white rounded-nu border border-gray-100 nu-card-shadow">
+                <h4 className="font-bold flex items-center gap-2 mb-2">📱 WhatsApp Ilimitado</h4>
+                <p className="text-sm text-gray-600">Navegue, mande mensagens, fotos e faça ligações de vídeo/voz sem gastar sua franquia principal.</p>
+             </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 2,
+      title: "Transparência e Ciclo",
+      icon: <Icons.FileText />,
+      content: (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-nu border border-gray-200">
+            <h3 className="font-title text-xl mb-4">Portabilidade Nu</h3>
+            <div className="flex flex-col md:flex-row gap-6 items-center">
+              <div className="flex-1 space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-nucel-purple text-white flex items-center justify-center font-bold">1</div>
+                  <p className="text-sm">Solicita no app (recebe número provisório).</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-nucel-purple text-white flex items-center justify-center font-bold">2</div>
+                  <p className="text-sm">Prazo médio de 3 dias úteis para conclusão.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-nucel-purple text-white flex items-center justify-center font-bold">3</div>
+                  <p className="text-sm">Confirmação via SMS e troca automática.</p>
+                </div>
+              </div>
+              <div className="hidden md:block w-px h-32 bg-gray-100"></div>
+              <div className="flex-1 bg-gray-50 p-4 rounded-xl">
+                <h4 className="font-bold text-red-600 text-sm mb-2 italic">⚠️ Atenção ao Cancelamento</h4>
+                <p className="text-xs text-gray-600">No "Cancelamento Estendido", você usa até o fim do ciclo. No "Imediato", o sinal é cortado na hora.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 3,
+      title: "Dono da Situação",
+      icon: <Icons.Shield />,
+      content: (
+        <div className="space-y-6">
+          <h3 className="font-title text-2xl">Troubleshooting & Segurança</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button className="flex flex-col items-start p-6 bg-white border-2 border-transparent hover:border-nucel-purple rounded-nu transition-all text-left nu-card-shadow group">
+               <span className="bg-nucel-purpleLight p-2 rounded-lg mb-4 group-hover:scale-110 transition-transform">
+                 <Icons.Signal />
+               </span>
+               <h4 className="font-bold mb-1">Problemas de Rede?</h4>
+               <p className="text-sm text-gray-500">O app tem um fluxo de autoatendimento que faz o "Reset de Rede" (reenvio de switch) automaticamente.</p>
+            </button>
+            <button className="flex flex-col items-start p-6 bg-white border-2 border-transparent hover:border-nucel-purple rounded-nu transition-all text-left nu-card-shadow group">
+               <span className="bg-red-100 p-2 rounded-lg mb-4 group-hover:scale-110 transition-transform text-red-600">
+                 <Icons.Shield />
+               </span>
+               <h4 className="font-bold mb-1">Perda ou Roubo?</h4>
+               <p className="text-sm text-gray-500">Bloqueie pelo site "Me Roubaram" ou via "Celular Seguro" do Gov.br. O desbloqueio é só pelo app.</p>
+            </button>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 4,
+      title: "Regras Financeiras",
+      icon: <Icons.Repeat />,
+      content: (
+        <div className="space-y-6">
+          <div className="relative p-8 bg-zinc-900 rounded-nu text-white">
+            <h3 className="text-2xl font-title text-amber-400 mb-4 italic">Período de Lambuja 💡</h3>
+            <p className="text-lg leading-relaxed">Se o pagamento falhar no dia da renovação, não se desespere! O NuCel oferece <strong>5 dias de carência</strong> para você regularizar seu saldo sem perder a conexão.</p>
+            <div className="mt-6 flex gap-4">
+               <div className="flex-1 border border-white/20 p-3 rounded-lg text-center">
+                  <span className="block text-2xl font-bold">15 dias</span>
+                  <span className="text-[10px] uppercase opacity-60">Sem saldo: Suspensão</span>
+               </div>
+               <div className="flex-1 border border-white/20 p-3 rounded-lg text-center">
+                  <span className="block text-2xl font-bold">60 dias</span>
+                  <span className="text-[10px] uppercase opacity-60">Sem saldo: Cancelamento</span>
+               </div>
+            </div>
+          </div>
+        </div>
+      )
     }
-  });
-
-  // ── Dados dos treinamentos ──
-  const DRIVE = 'https://drive.google.com/drive/folders/1rg0mKEg06jH9aXGfgG9ed10kheA-J6kK?usp=drive_link';
-  const DRIVE_ROTEIRO = 'https://drive.google.com/drive/folders/1rg0mKEg06jH9aXGfgG9ed10kheA-J6kK?usp=drive_link';
-
-  let treinamentos = [
-    { semana:'W7',  mes:'Fev', nome:'Classificação Submetivos',         weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
-    { semana:'W8',  mes:'Fev', nome:'Tratativa de chamadas',             weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
-    { semana:'W11', mes:'Fev', nome:'Coleta e escalagem',                weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5801',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
-    { semana:'W12', mes:'Mar', nome:'Experiência além do script',        weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5827',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
-    { semana:'W13', mes:'Mar', nome:'Imersão NuCel — Funcionalidades',   weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5851',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
-    { semana:'W15', mes:'Mar', nome:'Pílula: Regras eSIM',               weduka:'https://nubank.weduka.com.br/DocumentFind/Document?idDocument=22175&logType=12&idlogSearch=30897788', roteiro:'', drive: DRIVE },
-    { semana:'W16', mes:'Mar', nome:'Diagnóstico: checklist falha',      weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5909',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
-    { semana:'W17', mes:'Abr ✦', nome:'Arte da Comunicação',            weduka:'https://nubank.weduka.com.br/TrainingAssoc/Preview?trid=5924',                              roteiro: DRIVE_ROTEIRO, drive: DRIVE },
-    { semana:'W18', mes:'Abr ✦', nome:'Glossário Submotivo',            weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
-    { semana:'W19', mes:'Mai',  nome:'Empatia NPS 0 vs 10',              weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
-    { semana:'W20', mes:'Mai',  nome:'Resolução 1º contato',             weduka:'',                                                                                          roteiro:'',          drive: DRIVE },
   ];
 
-  function btnHtml(url, tipo, label) {
-    if (!url) return `<span class="link-btn empty">${label}</span>`;
-    return `<a href="${url}" target="_blank" class="link-btn ${tipo}">Abrir →</a>`;
-  }
-
-  function renderGrid() {
-    const cols = [
-      { key:'weduka',  label:'Weduka',           cls:'weduka', icon:'W' },
-      { key:'roteiro', label:'Roteiro (Drive)',   cls:'roteiro', icon:'R' },
-      { key:'drive',   label:'Drive — Conteúdos', cls:'drive',   icon:'▲' },
-    ];
-    const grid = document.getElementById('linksGrid');
-    grid.innerHTML = cols.map(col => `
-      <div>
-        <div class="link-col-header ${col.cls}">
-          <div class="link-col-icon ${col.cls}">${col.icon}</div>
-          ${col.label}
-        </div>
-        <div class="link-col-body">
-          ${treinamentos.map(t => `
-            <div class="link-item">
-              <div class="link-item-left">
-                <span class="link-week">${t.semana} · ${t.mes}</span>
-                <span class="link-name">${t.nome}</span>
-              </div>
-              ${btnHtml(t[col.key], col.cls, t[col.key] ? 'Abrir →' : (t.semana==='W17'||t.semana==='W18' ? 'Em prod.' : 'Pendente'))}
-            </div>`).join('')}
-        </div>
-      </div>`).join('');
-  }
-
-  function renderEditor() {
-    const rows = document.getElementById('editorRows');
-    rows.innerHTML = treinamentos.map((t, i) => `
-      <div style="background:var(--gray-100);border-radius:10px;padding:14px 16px;">
-        <div style="font-size:12px;font-weight:600;color:var(--nu-dark);margin-bottom:10px;">${t.semana} · ${t.nome}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-          <div>
-            <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Weduka</div>
-            <input type="text" value="${t.weduka}" data-idx="${i}" data-field="weduka"
-              placeholder="https://nubank.weduka.com.br/..."
-              style="font-family:var(--font);font-size:11px;width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;color:var(--gray-900);">
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Roteiro</div>
-            <input type="text" value="${t.roteiro}" data-idx="${i}" data-field="roteiro"
-              placeholder="https://drive.google.com/..."
-              style="font-family:var(--font);font-size:11px;width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;color:var(--gray-900);">
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--gray-400);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Drive</div>
-            <input type="text" value="${t.drive}" data-idx="${i}" data-field="drive"
-              placeholder="https://drive.google.com/..."
-              style="font-family:var(--font);font-size:11px;width:100%;padding:6px 8px;border:1px solid var(--gray-200);border-radius:6px;color:var(--gray-900);">
-          </div>
-        </div>
-      </div>`).join('');
-  }
-
-  function toggleEditor() {
-    const p = document.getElementById('editorPanel');
-    const btn = document.getElementById('btnEditar');
-    if (p.style.display === 'none') {
-      renderEditor();
-      p.style.display = 'block';
-      btn.textContent = '✕ Fechar editor';
-    } else {
-      p.style.display = 'none';
-      btn.textContent = '✏️ Editar links';
+  const quizQuestions = [
+    {
+      q: "Qual o rendimento da Caixinha Turbo exclusiva do NuCel?",
+      options: ["100% do CDI", "110% do CDI", "120% do CDI", "150% do CDI"],
+      correct: 2
+    },
+    {
+      q: "Em que momento a 'Reserva de GB' é ativada automaticamente?",
+      options: ["Ao atingir 50% de uso", "Ao atingir 80% de uso", "Ao atingir 95% de uso", "Sempre no dia 1 do mês"],
+      correct: 2
+    },
+    {
+      q: "O que está incluído no WhatsApp Ilimitado?",
+      options: ["Apenas texto", "Texto e Áudio apenas", "Texto, Fotos, Áudio e Vídeo (voz/imagem)", "Apenas chamadas"],
+      correct: 2
+    },
+    {
+      q: "Quantos dias dura o 'Período de Lambuja' em caso de falha de pagamento?",
+      options: ["2 dias", "3 dias", "5 dias", "7 dias"],
+      correct: 2
+    },
+    {
+      q: "Como é feito o desbloqueio da linha após perda ou roubo?",
+      options: ["Pelo site Me Roubaram", "Exclusivamente pelo App Nubank", "Ligando no 0800", "Via SMS"],
+      correct: 1
     }
+  ];
+
+  const handleCompleteModule = () => {
+    if (!completedModules.includes(currentModule)) {
+      const newCompleted = [...completedModules, currentModule];
+      setCompletedModules(newCompleted);
+      localStorage.setItem('nucel_progress', JSON.stringify(newCompleted));
+    }
+    
+    if (currentModule < modules.length - 1) {
+      setCurrentModule(currentModule + 1);
+      window.scrollTo(0, 0);
+    } else {
+      setCurrentModule(99); // Vai para o Quiz
+    }
+  };
+
+  const handleQuizFinish = (score) => {
+    setQuizScore(score);
+    if (score >= 4) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#8A05BE', '#E8D2F3', '#FFFFFF']
+      });
+    }
+  };
+
+  const resetTraining = () => {
+    setCompletedModules([]);
+    setCurrentModule(0);
+    setQuizScore(null);
+    localStorage.removeItem('nucel_progress');
+  };
+
+  const progressPercentage = (completedModules.length / modules.length) * 100;
+
+  if (!appStarted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white p-8 rounded-nu nu-card-shadow text-center animate-slide-up">
+          <div className="w-20 h-20 bg-nucel-purple text-white rounded-2xl flex items-center justify-center mx-auto mb-6 rotate-3">
+             <span className="font-title text-4xl">Nu</span>
+          </div>
+          <h1 className="text-3xl font-title text-nucel-text mb-2">Imersão NuCel</h1>
+          <p className="text-gray-500 mb-8">Torne-se um especialista na operadora que reinventou a conexão.</p>
+          
+          <input 
+            type="text" 
+            placeholder="Seu nome"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            className="w-full p-4 border-2 border-gray-100 rounded-xl mb-4 focus:border-nucel-purple outline-none transition-colors"
+          />
+          
+          <button 
+            disabled={!userName}
+            onClick={() => {
+              localStorage.setItem('nucel_user', userName);
+              setAppStarted(true);
+            }}
+            className="w-full bg-nucel-purple text-white font-bold py-4 rounded-xl hover:bg-nucel-purpleDark transition-all disabled:opacity-50"
+          >
+            Começar Jornada
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  function salvarEdicoes() {
-    document.querySelectorAll('#editorRows input').forEach(inp => {
-      const i = parseInt(inp.dataset.idx);
-      const f = inp.dataset.field;
-      treinamentos[i][f] = inp.value.trim();
-    });
-    renderGrid();
-    const msg = document.getElementById('salvoMsg');
-    msg.style.display = 'block';
-    setTimeout(() => msg.style.display = 'none', 2500);
-  }
+  return (
+    <div className="min-h-screen pb-24">
+      {/* Header Fixo */}
+      <header className="sticky top-0 z-40 glass-effect border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-nucel-purple text-white rounded-lg flex items-center justify-center font-bold text-xl">Nu</div>
+             <div>
+               <h2 className="font-title text-nucel-text leading-tight">NuCel</h2>
+               <p className="text-[10px] text-gray-500 uppercase tracking-widest font-bold">Training Hub</p>
+             </div>
+          </div>
+          <div className="flex items-center gap-4">
+             <div className="text-right hidden sm:block">
+               <p className="text-xs text-gray-400">Olá, <strong>{userName}</strong></p>
+               <p className="text-[10px] text-nucel-purple font-bold">Nível: {completedModules.length + 1} de 5</p>
+             </div>
+             <button onClick={resetTraining} className="p-2 text-gray-400 hover:text-nucel-purple transition-colors">
+               <Icons.Repeat />
+             </button>
+          </div>
+        </div>
+        {/* Progress Bar */}
+        <div className="w-full h-1 bg-gray-100">
+           <div 
+             className="h-full bg-nucel-purple transition-all duration-500 ease-out shadow-[0_0_10px_#8A05BE]" 
+             style={{ width: `${progressPercentage}%` }}
+           ></div>
+        </div>
+      </header>
 
-  function baixarHTML() {
-    salvarEdicoes();
-    const html = document.documentElement.outerHTML;
-    const blob = new Blob([html], { type: 'text/html' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'agenda_progressiva_nucel_2026.html';
-    a.click();
-  }
+      <main className="max-w-4xl mx-auto px-6 mt-12 animate-slide-up">
+        {currentModule === 99 ? (
+          <Quiz questions={quizQuestions} onFinish={handleQuizFinish} score={quizScore} />
+        ) : (
+          <div className="space-y-8">
+            <div className="flex items-center gap-4">
+              <span className="p-4 bg-white rounded-nu nu-card-shadow text-nucel-purple">
+                {modules[currentModule].icon}
+              </span>
+              <h1 className="text-3xl md:text-4xl font-title text-nucel-text">
+                {modules[currentModule].title}
+              </h1>
+            </div>
 
-  renderGrid();
-</script>
-</body>
-</html>
+            <div className="min-h-[300px]">
+              {modules[currentModule].content}
+            </div>
+
+            <div className="flex justify-end pt-12">
+              <button 
+                onClick={handleCompleteModule}
+                className="flex items-center gap-2 bg-nucel-purple text-white px-8 py-4 rounded-nu font-bold hover:scale-105 active:scale-95 transition-all shadow-lg"
+              >
+                {currentModule === modules.length - 1 ? "Ir para o Desafio" : "Próximo Passo"}
+                <Icons.ArrowRight />
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {showToast && <Toast {...showToast} onClose={() => setShowToast(null)} />}
+    </div>
+  );
+};
+
+// --- Componente de Quiz ---
+const Quiz = ({ questions, onFinish, score }) => {
+  const [currentQ, setCurrentQ] = useState(0);
+  const [localScore, setLocalScore] = useState(0);
+  const [selectedOption, setSelectedOption] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+
+  const handleAnswer = (idx) => {
+    setSelectedOption(idx);
+    const isCorrect = idx === questions[currentQ].correct;
+    
+    setTimeout(() => {
+      if (isCorrect) setLocalScore(prev => prev + 1);
+      
+      if (currentQ < questions.length - 1) {
+        setCurrentQ(currentQ + 1);
+        setSelectedOption(null);
+      } else {
+        setShowResult(true);
+        onFinish(localScore + (isCorrect ? 1 : 0));
+      }
+    }, 600);
+  };
+
+  if (showResult || score !== null) {
+    const finalScore = score !== null ? score : localScore;
+    const isMaster = finalScore >= 4;
+
+    return (
+      <div className="bg-white p-12 rounded-nu nu-card-shadow text-center space-y-6">
+        <div className="text-6xl mb-4">{isMaster ? "🎉" : "💪"}</div>
+        <h2 className="text-3xl font-title text-nucel-purple">
+          {isMast
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
